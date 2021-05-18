@@ -48,5 +48,5 @@ git commit backup-pg_*_all.deb
 Authorship
 ----------
 
-`dump_postgres_dbs` started it's life as http://forritan.blogspot.ch/2012/10/postgresql-backup-script.html,
+`dump_postgres_dbs` started its life as http://forritan.blogspot.ch/2012/10/postgresql-backup-script.html,
 was later improved by Pirmin Kalberer and then by Tomáš Pospíšek
