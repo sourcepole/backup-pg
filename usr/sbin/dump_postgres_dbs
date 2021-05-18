@@ -1,0 +1,108 @@
+#!/bin/bash
+# PostgreSQL backup script
+# Run as postgres user
+# Based on http://forritan.blogspot.ch/2012/10/postgresql-backup-script.html
+
+help() {
+   echo 'usage: dump_postgres_dbs [--ignore-not-accepting-connections] [--ignore-does-not-exist] [/path/to/backup/dir]'
+   echo '       dump_postgres_dbs --help'
+   echo
+   echo '    --ignore-not-accepting-connections'
+   echo
+   echo '         Ignore pg_dump errors resulting from DBs that do not'
+   echo '         allow to be connected to.'
+   echo
+   echo '    --ignore-does-not-exist'
+   echo
+   echo '         Ignore pg_dump errors resulting from DBs that do not'
+   echo '         exist.'
+   echo
+   echo '    /path/to/backup/dir'
+   echo
+   echo '         Directory where `pg_dump`s of DBs will be saved.'
+   echo '         Default is /var/lib/postgresql/backup'
+   echo
+   exit 1
+}
+
+[ "$1" == "--help" ] && help
+[ "$1" == "--ignore-not-accepting-connections" ] && NOT_ACCEPTING_CONNECTIONS=IGNORE && shift
+[ "$1" == "--ignore-does-not-exist"            ] && DOES_NOT_EXIST=IGNORE && shift
+
+set -e # stop on error
+
+BACKUP_PATH=${1:-"/var/lib/postgresql/backup"}
+
+log() {
+    # prefix all log messages with dashes so they become
+    # visually easily distinguishable from psql errors
+    echo "------------------ $1" >&2
+}
+
+log "Start of dump_postgres_dbs: `date -R`" 
+
+# For all running PostgreSQL clusters
+#
+# See below, the end of the loop for the input. If we do it this way then
+# the body of the loop is NOT executed in a subshell and thus setting the
+# variables in the body of the loop affects their value outside of the
+# loop.
+#
+# The problem is documented here:
+# http://mywiki.wooledge.org/BashFAQ/024
+# 
+while read cluster; do
+
+    # Create backup path
+    mkdir -p $BACKUP_PATH/$cluster
+
+    # Global stuff from cluster: roles etc.
+    pg_dumpall --cluster $cluster --globals-only >$BACKUP_PATH/$cluster/globals.sql
+
+    error=0
+    # And then each database (except templates)
+    psql --cluster $cluster --no-align --tuples-only \
+         --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn" \
+    | while read databasename; do
+        log "Start of $databasename DB dump"
+
+        if pg_dump_output=$( pg_dump --cluster $cluster \
+                                  --format=c $databasename \
+                                  --file="$BACKUP_PATH/$cluster/$databasename.dump" \
+                             2>&1 );
+        then
+          log "Dump of $databasename SUCCESSFUL"
+
+        else
+          log "$pg_dump_output"
+
+          # pg_dump: error: connection to database "foobar" failed: FATAL:  database "foobar" does not exist
+          if   echo "$pg_dump_output" | grep -q "does not exist" && \
+               [ "$DOES_NOT_EXIST" == "IGNORE" ]; then
+            log "Dump of $databasename IGNORED - was deleted before we could dump it"
+
+          # pg_dump: error: connection to database "barbaz" failed: FATAL:  database "barbaz" is not currently accepting connections
+          elif echo "$pg_dump_output" | grep -q "is not currently accepting connections" && \
+               [ "$NOT_ACCEPTING_CONNECTIONS" == "IGNORE" ]; then
+            log "Dump of $databasename IGNORED - was disabled before we could dump it"
+
+          else
+            log "Dump of $databasename FAILED"
+            error=1
+
+          fi
+        fi
+    done
+
+done < <( awk -- '{ print $1"/"$2 }' <(pg_lsclusters --no-header | grep online) )
+
+if [ "$error" = 0 ]; then
+    touch /var/log/backup-pg.success
+    status=SUCCESSFUL
+else
+    status=FAILED
+fi
+
+log "End of dump_postgres_dbs: $status: `date -R`, error: $error" 
+
+exit $error

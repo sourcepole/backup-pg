@@ -1,0 +1,4 @@
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+
+28 2	* * *	root		touch /var/log/dump_postgres_dbs.log && chown postgres /var/log/dump_postgres_dbs.log
+29 2	* * *	postgres	ionice -c3 dump_postgres_dbs 2> /var/log/dump_postgres_dbs.log || echo "backup failed, see /var/log/dump_postgres_dbs.log"

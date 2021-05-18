@@ -1,0 +1,55 @@
+backup-pg (0.1-10) unstable; urgency=medium
+
+  * prepare for public release
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Tue, 18 May 2021 15:03:36 +0200
+
+backup-pg (0.1-9) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Mon, 18 Jan 2021 17:33:47 +0100
+
+backup-pg (0.1-8) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Thu, 07 Jan 2021 15:34:42 +0100
+
+backup-pg (0.1-7) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Mon, 04 Jan 2021 17:32:51 +0100
+
+backup-pg (0.1-6) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Mon, 04 Jan 2021 16:48:09 +0100
+
+backup-pg (0.1-5) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Thu, 15 Jun 2017 14:05:12 +0200
+
+backup-pg (0.1-4) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Thu, 19 Feb 2015 10:33:20 +0100
+
+backup-pg (0.1-3) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Tue, 17 Feb 2015 11:52:22 +0100
+
+backup-pg (0.1-1) unstable; urgency=low
+
+  * Initial release
+  * split out of the dubackup package
+  * see the git log for changes
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Tue, 10 Feb 2015 14:45:05 +0100

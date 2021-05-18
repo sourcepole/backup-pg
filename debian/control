@@ -1,0 +1,15 @@
+Source: backup-pg
+Section: sourcepole
+Priority: optional
+Maintainer: Tomas Pospisek <tpo_deb@sourcepole.ch>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Vcs-Git: git@git.sourcepole.ch:sourcepole/sp-sysadmin.git
+Vcs-Browser: https://gitlab.sourcepole.ch/sourcepole/sp-sysadmin
+
+Package: backup-pg
+Architecture: all
+# depend on util-linux for ionice
+Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-client, util-linux
+Description: Sourcepole's postgres DB backup
+ see /usr/share/doc/backup-pg/README for docu

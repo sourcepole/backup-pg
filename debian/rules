@@ -1,0 +1,31 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#DH_VERBOSE = 1
+
+# see EXAMPLES in dpkg-buildflags(1) and read /usr/share/dpkg/*
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/default.mk
+
+# see FEATURE AREAS in dpkg-buildflags(1)
+# see ENVIRONMENT in dpkg-buildflags(1)
+
+# main packaging script based on dh7 syntax
+%:
+	dh $@ 
+
+override_dh_fixperms:
+	dh_fixperms
+	touch -t 197001010000 debian/backup-pg/var/log/backup-pg.success
+	chown postgres debian/backup-pg/var/log/backup-pg.success
+
+# we don't need those steps
+override_dh_auto_configure:
+override_dh_auto_build:
+override_dh_auto_test:
+override_dh_auto_install:
+override_dh_usrlocal:
+override_dh_strip:
+override_dh_makeshlibs:
+override_dh_shlibdeps:
+override_dh_perl:
