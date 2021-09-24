@@ -4,7 +4,7 @@
 # Based on http://forritan.blogspot.ch/2012/10/postgresql-backup-script.html
 
 help() {
-   echo 'usage: dump_postgres_dbs [--ignore-not-accepting-connections] [--ignore-does-not-exist] [/path/to/backup/dir]'
+   echo 'usage: dump_postgres_dbs [--ignore-not-accepting-connections] [--ignore-does-not-exist] [--no-clusters] [/path/to/backup/dir]'
    echo '       dump_postgres_dbs --help'
    echo
    echo '    --ignore-not-accepting-connections'
@@ -17,6 +17,11 @@ help() {
    echo '         Ignore pg_dump errors resulting from DBs that do not'
    echo '         exist.'
    echo
+   echo '    --no-cluster'
+   echo
+   echo '         DBs have been crated with low level tools: no'
+   echo '         clusters exist.'
+   echo
    echo '    /path/to/backup/dir'
    echo
    echo '         Directory where `pg_dump`s of DBs will be saved.'
@@ -28,6 +33,7 @@ help() {
 [ "$1" == "--help" ] && help
 [ "$1" == "--ignore-not-accepting-connections" ] && NOT_ACCEPTING_CONNECTIONS=IGNORE && shift
 [ "$1" == "--ignore-does-not-exist"            ] && DOES_NOT_EXIST=IGNORE && shift
+[ "$1" == "--no-clusters"                      ] && NO_CLUSTERS=true && shift
 
 set -e # stop on error
 
@@ -57,19 +63,36 @@ while read cluster; do
     mkdir -p $BACKUP_PATH/$cluster
 
     # Global stuff from cluster: roles etc.
-    pg_dumpall --cluster $cluster --globals-only >$BACKUP_PATH/$cluster/globals.sql
+    if [ "$NO_CLUSTERS" == "true" ]; then
+        pg_dumpall                    --globals-only >$BACKUP_PATH/$cluster/globals.sql
+    else
+        pg_dumpall --cluster $cluster --globals-only >$BACKUP_PATH/$cluster/globals.sql
+    fi
 
     error=0
     # And then each database (except templates)
-    psql --cluster $cluster --no-align --tuples-only \
-         --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn" \
+    if [ "$NO_CLUSTERS" == "true" ]; then
+        psql                    --no-align --tuples-only \
+             --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
+    else
+        psql --cluster $cluster --no-align --tuples-only \
+             --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
+    fi \
     | while read databasename; do
         log "Start of $databasename DB dump"
 
-        if pg_dump_output=$( pg_dump --cluster $cluster \
-                                  --format=c $databasename \
-                                  --file="$BACKUP_PATH/$cluster/$databasename.dump" \
-                             2>&1 );
+        if pg_dump_output=$( if [ "$NO_CLUSTERS" == "true" ]; then
+                                 pg_dump \
+                                         --format=c $databasename \
+                                         --file="$BACKUP_PATH/$cluster/$databasename.dump" \
+                                 2>&1
+                             else
+                                 pg_dump --cluster $cluster \
+                                         --format=c $databasename \
+                                         --file="$BACKUP_PATH/$cluster/$databasename.dump" \
+                                 2>&1
+                             fi
+                           );
         then
           log "Dump of $databasename SUCCESSFUL"
 
@@ -94,7 +117,12 @@ while read cluster; do
         fi
     done
 
-done < <( awk -- '{ print $1"/"$2 }' <(pg_lsclusters --no-header | grep online) )
+done < <( if [ "$NO_CLUSTERS" == "true" ]; then
+              echo default
+          else
+              awk -- '{ print $1"/"$2 }' <(pg_lsclusters --no-header | grep online)
+          fi
+        )
 
 if [ "$error" = 0 ]; then
     touch /var/log/backup-pg.success
