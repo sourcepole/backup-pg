@@ -35,7 +35,7 @@ How to release a new version of this package
 --------------------------------------------
 
 ```
-apt-get install dpkg-dev
+apt-get install dpkg-dev devscripts
 debchange --distribution unstable --no-auto-nmu --maintmaint --increment "see git log"  && \
 dpkg-buildpackage -b -tc -rfakeroot                                                     && \
 rm ../backup-pg_*_*.changes                                                             && \
