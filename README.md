@@ -42,7 +42,7 @@ rm ../backup-pg_*_*.changes                                                     
 rm ../backup-pg_*_*.buildinfo                                                           && \
 mv ../backup-pg_*_all.deb .                                                             && \
 git add    backup-pg_*_all.deb                                                          && \
-git commit backup-pg_*_all.deb
+git commit backup-pg_*_all.deb debian/changelog -m "build new package"
 ```
 
 Authorship
