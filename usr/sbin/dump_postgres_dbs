@@ -39,6 +39,8 @@ set -e # stop on error
 
 BACKUP_PATH=${1:-"/var/lib/postgresql/backup"}
 
+error=0
+
 log() {
     # prefix all log messages with dashes so they become
     # visually easily distinguishable from psql errors
@@ -69,16 +71,14 @@ while read cluster; do
         pg_dumpall --cluster $cluster --globals-only >$BACKUP_PATH/$cluster/globals.sql
     fi
 
-    error=0
-    # And then each database (except templates)
-    if [ "$NO_CLUSTERS" == "true" ]; then
-        psql                    --no-align --tuples-only \
-             --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
-    else
-        psql --cluster $cluster --no-align --tuples-only \
-             --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
-    fi \
-    | while read databasename; do
+    # Then backup each database (except templates)
+    #
+    # Again see below, at the end of the loop, for the input. Find the
+    # rationale for this way of doing it in the comments of the outer
+    # loop. In particular, we need to be able to overwrite the global
+    # `error` variable from within of the loop below.
+    #
+    while read databasename; do
         log "Start of $databasename DB dump"
 
         if pg_dump_output=$( if [ "$NO_CLUSTERS" == "true" ]; then
@@ -115,7 +115,14 @@ while read cluster; do
 
           fi
         fi
-    done
+    done < <( if [ "$NO_CLUSTERS" == "true" ]; then
+                psql                    --no-align --tuples-only \
+                     --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
+              else
+                psql --cluster $cluster --no-align --tuples-only \
+                     --command="SELECT datname from pg_database WHERE datname NOT IN ('postgres','template0','template1') AND datallowconn"
+              fi
+            )
 
 done < <( if [ "$NO_CLUSTERS" == "true" ]; then
               echo default
