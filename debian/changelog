@@ -1,3 +1,9 @@
+backup-pg (0.1-12) unstable; urgency=medium
+
+  * see git log
+
+ -- Tomas Pospisek <tpo_deb@sourcepole.ch>  Mon, 16 Dec 2024 18:11:55 +0100
+
 backup-pg (0.1-11) unstable; urgency=medium
 
   * see git log
