@@ -49,10 +49,10 @@ log "Start of dump_postgres_dbs: `date -R`"
 
 # For all running PostgreSQL clusters
 #
-# See below, the end of the loop for the input. If we do it this way then
-# the body of the loop is NOT executed in a subshell and thus setting the
-# variables in the body of the loop affects their value outside of the
-# loop.
+# See below, at the end of the loop, for the for the input.
+# If we do it this way then the body of the loop is NOT executed in a
+# subshell and thus setting the variables in the body of the loop
+# affects their value outside of the loop.
 #
 # The problem is documented here:
 # http://mywiki.wooledge.org/BashFAQ/024
@@ -62,7 +62,7 @@ while read cluster; do
     # Create backup path
     mkdir -p $BACKUP_PATH/$cluster
 
-    # Global stuff from cluster: roles etc.
+    # Backup global stuff from cluster: roles etc.
     if [ "$NO_CLUSTERS" == "true" ]; then
         pg_dumpall                    --globals-only >$BACKUP_PATH/$cluster/globals.sql
     else
