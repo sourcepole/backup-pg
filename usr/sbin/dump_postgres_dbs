@@ -4,7 +4,10 @@
 # Based on http://forritan.blogspot.ch/2012/10/postgresql-backup-script.html
 
 help() {
-   echo 'usage: dump_postgres_dbs [--ignore-canceling-statement-due-to-conflict-with-recovery] [--ignore-not-accepting-connections] [--ignore-does-not-exist] [--no-clusters] [/path/to/backup/dir]'
+   echo 'usage: dump_postgres_dbs [--ignore-canceling-statement-due-to-conflict-with-recovery]'
+   echo '                         [--ignore-terminating-connection-due-to-conflict-with-recovery]'
+   echo '                         [--ignore-not-accepting-connections]'
+   echo '                         [--ignore-does-not-exist] [--no-clusters] [/path/to/backup/dir]'
    echo '       dump_postgres_dbs --help'
    echo
    echo '    --ignore-not-accepting-connections'
@@ -23,6 +26,12 @@ help() {
    echo '         getting aborted.'
    echo '         see https://www.postgresql.org/docs/current/hot-standby.html#HOT-STANDBY-CONFLICT'
    echo
+   echo '    --ignore-terminating-connection-due-to-conflict-with-recovery'
+   echo
+   echo '         Ignore another error of DB being changed while dumping and dump'
+   echo '         getting aborted.'
+   echo '         see https://www.postgresql.org/docs/current/hot-standby.html#HOT-STANDBY-CONFLICT'
+   echo
    echo '    --no-cluster'
    echo
    echo '         DBs have been crated with low level tools: no'
@@ -37,10 +46,11 @@ help() {
 }
 
 [ "$1" == "--help" ] && help
-[ "$1" == "--ignore-canceling-statement-due-to-conflict-with-recovery" ] && CONFLICT_WITH_RECOVERY=IGNORE    && shift
-[ "$1" == "--ignore-not-accepting-connections"                         ] && NOT_ACCEPTING_CONNECTIONS=IGNORE && shift
-[ "$1" == "--ignore-does-not-exist"                                    ] && DOES_NOT_EXIST=IGNORE            && shift
-[ "$1" == "--no-clusters"                                              ] && NO_CLUSTERS=true                 && shift
+[ "$1" == "--ignore-canceling-statement-due-to-conflict-with-recovery"    ] && CONFLICT_WITH_RECOVERY=IGNORE    && shift
+[ "$1" == "--ignore-terminating-connection-due-to-conflict-with-recovery" ] && CONFLICT_WITH_RECOVERY2=IGNORE   && shift
+[ "$1" == "--ignore-not-accepting-connections"                            ] && NOT_ACCEPTING_CONNECTIONS=IGNORE && shift
+[ "$1" == "--ignore-does-not-exist"                                       ] && DOES_NOT_EXIST=IGNORE            && shift
+[ "$1" == "--no-clusters"                                                 ] && NO_CLUSTERS=true                 && shift
 
 set -e # stop on error
 
@@ -121,6 +131,11 @@ while read cluster; do
           elif echo "$pg_dump_output" | grep -q "canceling statement due to conflict with recovery" && \
                [ "$CONFLICT_WITH_RECOVERY" == "IGNORE" ]; then
 	    log "Dump of $databasename IGNORED - DB (WAL) changed during dump"
+
+          # pg_dump: error: query failed: FATAL:  terminating connection due to conflict with recovery
+          elif echo "$pg_dump_output" | grep -q "terminating connection due to conflict with recovery" && \
+               [ "$CONFLICT_WITH_RECOVERY2" == "IGNORE" ]; then
+	    log "Dump of $databasename IGNORED - 2 - DB (WAL) changed during dump"
 
           else
             log "Dump of $databasename FAILED"
